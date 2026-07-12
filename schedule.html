@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鮮茶樂 - 飲料店專屬一週排班系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        @keyframes jump {
+            0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 15px rgba(236, 72, 153, 0.6)); }
+            50% { transform: translateY(-30px) rotate(5deg); filter: drop-shadow(0 0 25px rgba(236, 72, 153, 0.8)); }
+        }
+        .animate-jump {
+            animation: jump 0.5s ease-in-out;
+        }
+        @keyframes float-glow {
+            0%, 100% { 
+                transform: translateY(0);
+                filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.3)) drop-shadow(0 0 20px rgba(236, 72, 153, 0.1));
+            }
+            50% { 
+                transform: translateY(-8px);
+                filter: drop-shadow(0 0 15px rgba(236, 72, 153, 0.5)) drop-shadow(0 0 30px rgba(236, 72, 153, 0.2));
+            }
+        }
+        .animate-float-glow {
+            animation: float-glow 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col relative bg-transparent">
+    <!-- 背景圖改為 background.png -->
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('background.png'); background-size: cover; background-position: center; opacity: 0.5; z-index: -1; pointer-events: none;"></div>
+
+    <header class="bg-emerald-800/90 backdrop-blur-md text-white shadow-md py-4 px-6 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-100 p-2.5 rounded-full text-emerald-800 shadow-inner">
+                    <i class="fa-solid fa-mug-hot text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">鮮茶樂排班系統</h1>
+                    <p class="text-xs text-emerald-200">雲端資料庫連動版</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <!-- 音樂播放控制 -->
+                <button id="musicToggleBtn" onclick="toggleMusic()" title="播放 / 暫停背景音樂"
+                    class="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-900/60 border border-emerald-600 hover:bg-emerald-700 transition text-white text-xs font-medium shadow-sm">
+                    <i id="musicIcon" class="fa-solid fa-play"></i>
+                    <span id="musicLabel">播放音樂</span>
+                    <span class="text-emerald-300 text-[10px] hidden sm:inline">排班系統2026.7.7</span>
+                </button>
+
+                <!-- 週別切換與操作控制 -->
+                <div class="flex items-center gap-2 bg-emerald-900/50 p-1.5 rounded-lg border border-emerald-700">
+                    <button onclick="changeWeek(-1)" class="hover:bg-emerald-800 text-white p-2 rounded transition" title="上一週">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span id="currentWeekDisplay" class="font-medium px-3 py-1 bg-emerald-800 rounded text-sm">2026 年 第 28 週</span>
+                    <button onclick="changeWeek(1)" class="hover:bg-emerald-800 text-white p-2 rounded transition" title="下一週">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- 左側面板：班別設定與員工管理 -->
+        <section class="lg:col-span-1 space-y-6">
+            
+            <!-- 快速看盤統計 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-emerald-600"></i> 本週數據概覽
+                </h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50">
+                        <span class="text-xs text-slate-500 block mb-1">排班總人數</span>
+                        <span id="totalStaffCount" class="text-xl font-bold text-emerald-700">0</span> 人
+                    </div>
+                    <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-100/50">
+                        <span class="text-xs text-slate-500 block mb-1">本週總工時</span>
+                        <span id="totalHoursCount" class="text-xl font-bold text-amber-700">0</span> 小時
+                    </div>
+                </div>
+                <div class="bg-sky-50/50 p-3 rounded-xl border border-sky-100/50">
+                    <span class="text-xs text-slate-500 block mb-1">預估薪資支出</span>
+                    <span class="text-lg font-bold text-sky-700">NT$ <span id="totalPayrollCount">0</span></span>
+                </div>
+            </div>
+
+            <!-- 班別指南 (圖例與時數) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-clock text-emerald-600"></i> 店內常用班別
+                    </h2>
+                </div>
+                <div id="shiftTypesList" class="space-y-2 text-sm">
+                    <!-- 班別卡片會動態生成於此 -->
+                </div>
+            </div>
+
+            <!-- 員工管理名單 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-user-group text-emerald-600"></i> 員工名單
+                    </h2>
+                </div>
+                <div id="employeeList" class="space-y-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                    <!-- 員工項目將由 JS 動態生成 -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 右側核心排班看板 -->
+        <section class="lg:col-span-3 space-y-4 flex flex-col">
+            
+            <!-- 表頭控制工具 -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full">功能面板</span>
+                    <span class="text-xs text-slate-500">提示：點擊你名字那一列的格子即可畫班。一班上限 2 人。</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearCurrentWeek()" id="clearWeekBtn" class="border border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 text-xs px-3 py-2 rounded-lg transition font-medium">
+                        <i class="fa-solid fa-trash-can mr-1"></i> 清空本週
+                    </button>
+                    <button onclick="exportToCSV()" class="border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs px-3 py-2 rounded-lg transition font-medium">
+                        <i class="fa-solid fa-file-csv mr-1"></i> 匯出 CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- 核心排班大網格 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex-grow flex flex-col">
+                <div class="overflow-x-auto custom-scrollbar flex-grow">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-100 text-slate-600 text-xs font-semibold tracking-wider">
+                                <th class="py-4 px-4 w-40 sticky left-0 bg-slate-50 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.03)]">員工 / 星期</th>
+                                <th class="py-4 px-3 text-center">週一</th>
+                                <th class="py-4 px-3 text-center">週二</th>
+                                <th class="py-4 px-3 text-center">週三</th>
+                                <th class="py-4 px-3 text-center">週四</th>
+                                <th class="py-4 px-3 text-center">週五</th>
+                                <th class="py-4 px-3 text-center text-emerald-600">週六</th>
+                                <th class="py-4 px-3 text-center text-emerald-600">週日</th>
+                                <th class="py-4 px-4 text-right w-28">總時數/薪資</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedulerGridBody" class="divide-y divide-slate-100 text-sm">
+                            <!-- 這裡會動態產生排班格子 -->
+                        </tbody>
+                        <tfoot>
+                            <tr id="coverageSummaryRow" class="bg-emerald-50/20 text-xs text-slate-600 font-medium">
+                                <td class="py-3 px-4 font-bold sticky left-0 bg-emerald-50/30 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.03)]">每日出勤人次</td>
+                                <td class="py-3 px-3 text-center" id="cov-0">0人</td>
+                                <td class="py-3 px-3 text-center" id="cov-1">0人</td>
+                                <td class="py-3 px-3 text-center" id="cov-2">0人</td>
+                                <td class="py-3 px-3 text-center" id="cov-3">0人</td>
+                                <td class="py-3 px-3 text-center" id="cov-4">0人</td>
+                                <td class="py-3 px-3 text-center" id="cov-5">0人</td>
+                                <td class="py-3 px-3 text-center" id="cov-6">0人</td>
+                                <td class="py-3 px-4 text-right font-bold text-emerald-800">全週</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- 指派排班視窗 -->
+    <div id="assignShiftModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden transform scale-95 transition-transform duration-200">
+            <div class="bg-emerald-800 text-white p-4 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-base" id="modalEmployeeName">指派排班</h3>
+                    <p class="text-xs text-emerald-200" id="modalDateDisplay">星期一</p>
+                </div>
+                <button onclick="closeAssignShiftModal()" class="text-white/80 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 space-y-4">
+                <span class="text-xs font-semibold text-slate-500 block uppercase tracking-wider">選擇班別</span>
+                <div id="modalShiftOptions" class="space-y-2"></div>
+                <hr class="border-slate-100 my-2">
+                <button onclick="setShift('off')" class="w-full flex justify-between items-center p-3 rounded-xl border border-rose-100 hover:bg-rose-50 text-rose-700 font-medium transition text-left text-sm">
+                    <span><i class="fa-solid fa-umbrella-beach mr-2"></i> 休假 (不排班)</span>
+                    <span class="text-xs bg-rose-100 px-2 py-0.5 rounded-md">OFF</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自訂刪除/清空確認對話框 -->
+    <div id="customConfirmModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden transform scale-95 transition-transform duration-200 p-6 space-y-4">
+            <div class="flex items-center gap-3 text-amber-600">
+                <i class="fa-solid fa-circle-exclamation text-2xl"></i>
+                <h3 class="font-bold text-lg text-slate-800">確定執行此操作？</h3>
+            </div>
+            <p id="confirmModalText" class="text-sm text-slate-600 leading-relaxed"></p>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeConfirmModal(false)" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm transition">取消</button>
+                <button onclick="closeConfirmModal(true)" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition shadow-sm">確認清除</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastMessage" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 transform translate-y-10 opacity-0 transition-all duration-300 z-50 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-emerald-400" id="toastIcon"></i>
+        <span id="toastText" class="text-xs font-medium">儲存成功</span>
+    </div>
+
+    <!-- 正妹店長浮動元素 -->
+    <div id="floating-manager" class="fixed bottom-4 right-4 z-40 flex flex-col items-end cursor-pointer" onclick="triggerRandomQuote()">
+        <div id="manager-quote" class="bg-white px-4 py-3 rounded-2xl shadow-xl border border-pink-200 text-pink-600 text-xs sm:text-sm font-bold mb-2 opacity-0 transition-opacity duration-300 relative pointer-events-none leading-relaxed" style="max-width: 320px; transform: rotate(-2deg);">
+            <span id="quote-text"></span>
+            <div class="absolute -bottom-2 right-12 w-0 h-0 border-l-[10px] border-l-transparent border-t-[12px] border-t-white border-r-[10px] border-r-transparent"></div>
+        </div>
+        <!-- 圖片英文化更名為 manager.png -->
+        <img src="manager.png" alt="正妹店長" class="w-40 h-auto origin-bottom animate-float-glow" id="manager-img">
+    </div>
+
+    <script>
+        // --- 核心系統狀態 ---
+        var API_URL = "https://script.google.com/macros/s/AKfycbwnGQO2gI_2ixVXyWnvJp33dJNogm1GCY5yGQl-ZxQ-DaPwCByUdlbajAx9a6y6xsqCtg/exec";
+        
+        var currentYear = 2026;
+        var currentWeek = 28;
+
+        // 從登入狀態撈取對應權限與員工ID
+        var userRole = localStorage.getItem('tealove_role') || 'employee';
+        var currentEmpId = localStorage.getItem('tealove_empId') || '';
+
+        // 同步試算表「帳號管理」中的架構員工
+        var employees = [
+            { id: 'emp_admin', name: '店長 Merle', role: 'admin', rate: 220 },
+            { id: 'emp_01', name: '店員 Elsa', role: 'employee', rate: 190 },
+            { id: 'emp_02', name: '店員 Nash', role: 'employee', rate: 190 },
+            { id: 'emp_03', name: '店員 Sophie', role: 'employee', rate: 190 }
+        ];
+
+        var shiftTypes = {
+            'morning': { name: '早班', hours: 8, time: '09:00-17:00', bg: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+            'middle': { name: '中班', hours: 8, time: '12:00-20:00', bg: 'bg-amber-50 text-amber-800 border-amber-200' },
+            'evening': { name: '晚班', hours: 7.5, time: '14:30-22:00', bg: 'bg-indigo-50 text-indigo-800 border-indigo-200' },
+            'custom': { name: '外送班', hours: 4, time: '11:00-15:00', bg: 'bg-sky-50 text-sky-800 border-sky-200' }
+        };
+
+        var scheduleData = {};
+        var activeAssignTarget = { employeeId: '', dayIndex: -1 };
+        var confirmCallback = null;
+
+        window.onload = function() {
+            var role = localStorage.getItem('tealove_role');
+            if (!role) {
+                window.location.href = 'login.html';
+                return;
+            }
+            updateWeekDisplay();
+            renderShiftTypes();
+            renderEmployeeList();
+            loadScheduleFromCloud();
+
+            if (userRole === 'employee') {
+                var clearBtn = document.getElementById('clearWeekBtn');
+                if (clearBtn) clearBtn.style.display = 'none';
+            }
+        };
+
+        // 從雲端試算表抓取最新資料
+        async function loadScheduleFromCloud() {
+            showToast('⏳ 正在同步雲端班表...', 'info');
+            try {
+                var response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'getSchedule' }),
+                    redirect: 'follow'
+                });
+                var result = await response.json();
+                if (result.success) {
+                    scheduleData = result.schedule || {};
+                    renderScheduleGrid();
+                    calculateSummary();
+                    showToast('✅ 雲端班表同步成功！');
+                } else {
+                    showToast('❌ 無法載入班表: ' + result.message, 'error');
+                }
+            } catch(e) {
+                console.error(e);
+                showToast('❌ 無法連線至雲端資料庫', 'error');
+                renderScheduleGrid();
+            }
+        }
+
+        function showToast(text, type = 'success') {
+            var toast = document.getElementById('toastMessage');
+            var toastText = document.getElementById('toastText');
+            var toastIcon = document.getElementById('toastIcon');
+            toastText.textContent = text;
+            if (type === 'success') toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+            else if (type === 'error') toastIcon.className = 'fa-solid fa-circle-exclamation text-rose-400';
+            else toastIcon.className = 'fa-solid fa-info text-sky-400';
+
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-10');
+            }, 2500);
+        }
+
+        function updateWeekDisplay() {
+            document.getElementById('currentWeekDisplay').textContent = `${currentYear} 年 第 ${currentWeek} 週`;
+        }
+
+        function changeWeek(direction) {
+            currentWeek += direction;
+            if (currentWeek < 1) { currentWeek = 52; currentYear--; }
+            else if (currentWeek > 52) { currentWeek = 1; currentYear++; }
+            updateWeekDisplay();
+            renderScheduleGrid();
+            calculateSummary();
+        }
+
+        function renderShiftTypes() {
+            var container = document.getElementById('shiftTypesList');
+            container.innerHTML = '';
+            for (var [key, shift] of Object.entries(shiftTypes)) {
+                container.innerHTML += `
+                    <div class="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full ${shift.bg.split(' ')[0]} border border-slate-300"></span>
+                            <div>
+                                <span class="font-semibold text-slate-700">${shift.name}</span>
+                                <span class="text-xs text-slate-400 block">${shift.time} (${shift.hours}H)</span>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        function renderEmployeeList() {
+            var container = document.getElementById('employeeList');
+            container.innerHTML = '';
+            employees.forEach(emp => {
+                var badgeColor = emp.role === 'admin' ? 'bg-rose-100 text-rose-800' : 'bg-sky-100 text-sky-800';
+                container.innerHTML += `
+                    <div class="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-xs shadow-sm">${emp.name.charAt(0)}</div>
+                            <div>
+                                <span class="font-medium text-slate-800 text-sm block">${emp.name}</span>
+                                <div class="flex gap-1.5 items-center mt-0.5">
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded ${badgeColor}">${emp.role === 'admin'?'店長':'店員'}</span>
+                                    <span class="text-[10px] text-slate-400">NT$ ${emp.rate}/H</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function renderScheduleGrid() {
+            var gridBody = document.getElementById('schedulerGridBody');
+            gridBody.innerHTML = '';
+
+            employees.forEach(emp => {
+                var rowHtml = `<tr class="hover:bg-slate-50/50 transition duration-150">`;
+                rowHtml += `
+                    <td class="py-3 px-4 sticky left-0 bg-white z-10 font-semibold text-slate-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)] flex flex-col justify-center min-h-[64px]">
+                        <span>${emp.name}</span>
+                        <span class="text-[10px] text-slate-400 font-normal mt-0.5">${emp.role==='admin'?'店長':'店員'} (NT$ ${emp.rate}/H)</span>
+                    </td>`;
+
+                var empTotalHours = 0;
+                for (var day = 0; day < 7; day++) {
+                    var dataKey = `${currentYear}_${currentWeek}_${emp.id}_${day}`;
+                    var shiftKey = scheduleData[dataKey];
+                    var cellContent = '';
+
+                    if (shiftKey && shiftTypes[shiftKey]) {
+                        var shift = shiftTypes[shiftKey];
+                        empTotalHours += shift.hours;
+                        cellContent = `
+                            <div class="px-2.5 py-1.5 rounded-xl border text-center text-xs font-semibold shadow-sm cursor-pointer transition transform hover:scale-102">
+                                <div class="truncate">${shift.name}</div>
+                                <div class="text-[9px] opacity-75 font-normal tracking-tight">${shift.time}</div>
+                            </div>`;
+                    } else {
+                        cellContent = `
+                            <div class="h-10 border border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 cursor-pointer transition">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                            </div>`;
+                    }
+
+                    rowHtml += `<td class="p-2 text-center" onclick="openAssignShiftModal('${emp.id}', ${day})">${cellContent}</td>`;
+                }
+
+                var payroll = Math.round(empTotalHours * emp.rate);
+                rowHtml += `
+                    <td class="py-3 px-4 text-right sticky right-0 bg-white shadow-[-2px_0_5px_rgba(0,0,0,0.01)]">
+                        <span class="font-bold text-slate-700 block">${empTotalHours} H</span>
+                        <span class="text-xs text-slate-400">NT$ ${payroll.toLocaleString()}</span>
+                    </td></tr>`;
+                gridBody.innerHTML += rowHtml;
+            });
+        }
+
+        function openAssignShiftModal(employeeId, dayIndex) {
+            // 權限防呆：普通員工不准點別人的橫列
+            if (userRole !== 'admin' && employeeId !== currentEmpId) {
+                showToast('❌ 權限不足：你只能修改你自己的班表！', 'error');
+                return;
+            }
+
+            activeAssignTarget = { employeeId, dayIndex };
+            var emp = employees.find(e => e.id === employeeId);
+            if (!emp) return;
+
+            var daysText = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+            document.getElementById('modalEmployeeName').textContent = `指派：${emp.name}`;
+            document.getElementById('modalDateDisplay').textContent = `指派時段：${daysText[dayIndex]}`;
+
+            var optionsContainer = document.getElementById('modalShiftOptions');
+            optionsContainer.innerHTML = '';
+            for (var [key, shift] of Object.entries(shiftTypes)) {
+                optionsContainer.innerHTML += `
+                    <button onclick="setShift('${key}')" class="w-full flex justify-between items-center p-3 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition text-left text-sm font-medium text-slate-700">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full ${shift.bg.split(' ')[0]} border border-slate-300"></span>
+                            <span>${shift.name}</span>
+                        </div>
+                        <span class="text-xs text-slate-400 font-normal">${shift.time} (${shift.hours}H)</span>
+                    </button>`;
+            }
+
+            var modal = document.getElementById('assignShiftModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('.transform').classList.remove('scale-95'); }, 50);
+        }
+
+        function closeAssignShiftModal() {
+            var modal = document.getElementById('assignShiftModal');
+            modal.querySelector('.transform').classList.add('scale-95');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        async function setShift(shiftKey) {
+            var target = activeAssignTarget;
+            var dataKey = `${currentYear}_${currentWeek}_${target.employeeId}_${target.dayIndex}`;
+            
+            closeAssignShiftModal();
+            showToast('⏳ 正在儲存至雲端系統...', 'info');
+
+            try {
+                var response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'saveShift',
+                        dataKey: dataKey,
+                        shiftKey: shiftKey,
+                        employeeId: currentEmpId,
+                        role: userRole
+                    }),
+                    redirect: 'follow'
+                });
+                
+                var textResult = await response.text();
+                var result;
+                try { result = JSON.parse(textResult); } catch(e) { throw new Error(textResult); }
+
+                if (result.success) {
+                    if (shiftKey === 'off') delete scheduleData[dataKey];
+                    else scheduleData[dataKey] = shiftKey;
+                    
+                    renderScheduleGrid();
+                    calculateSummary();
+                    showToast('✅ 排班更新成功！');
+                } else {
+                    showToast('❌ ' + result.message, 'error');
+                }
+            } catch(error) {
+                console.error(error);
+                // 把後端傳過來的「已達 2 人上限」或其他具體錯誤文字吐在提示裡
+                var msg = error.message.includes("上限") ? error.message : "雲端存取失敗，請重新操作。";
+                showToast('❌ ' + msg, 'error');
+            }
+        }
+
+        function calculateSummary() {
+            var totalStaff = employees.length;
+            var totalHours = 0;
+            var totalPayroll = 0;
+            var dailyCounts = [0, 0, 0, 0, 0, 0, 0];
+
+            employees.forEach(emp => {
+                for (var day = 0; day < 7; day++) {
+                    var dataKey = `${currentYear}_${currentWeek}_${emp.id}_${day}`;
+                    var shiftKey = scheduleData[dataKey];
+                    if (shiftKey && shiftTypes[shiftKey]) {
+                        totalHours += shiftTypes[shiftKey].hours;
+                        totalPayroll += shiftTypes[shiftKey].hours * emp.rate;
+                        dailyCounts[day]++;
+                    }
+                }
+            });
+
+            document.getElementById('totalStaffCount').textContent = totalStaff;
+            document.getElementById('totalHoursCount').textContent = totalHours;
+            document.getElementById('totalPayrollCount').textContent = Math.round(totalPayroll).toLocaleString();
+
+            for (var day = 0; day < 7; day++) {
+                var countCell = document.getElementById(`cov-${day}`);
+                countCell.textContent = `${dailyCounts[day]} 人`;
+                if (dailyCounts[day] === 0) countCell.className = "py-3 px-3 text-center text-rose-500 font-bold bg-rose-50/50";
+                else if (dailyCounts[day] > 2) countCell.className = "py-3 px-3 text-center text-amber-600 font-bold bg-amber-50/50";
+                else countCell.className = "py-3 px-3 text-center text-slate-700 font-bold";
+            }
+        }
+
+        // 用自訂對話框取代原生 confirm 警示窗
+        function openConfirmModal(text, callback) {
+            document.getElementById('confirmModalText').textContent = text;
+            confirmCallback = callback;
+            var modal = document.getElementById('customConfirmModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('.transform').classList.remove('scale-95'); }, 50);
+        }
+
+        function closeConfirmModal(isConfirmed) {
+            var modal = document.getElementById('customConfirmModal');
+            modal.querySelector('.transform').classList.add('scale-95');
+            modal.classList.add('opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); }, 200);
+            if (confirmCallback) { confirmCallback(isConfirmed); confirmCallback = null; }
+        }
+
+        function clearCurrentWeek() {
+            if (userRole !== 'admin') return;
+            openConfirmModal('確定要清空「本週」所有同仁在雲端上的排班資料嗎？（這將會直接同步更新試算表資料）', async function(isConfirmed) {
+                if (!isConfirmed) return;
+                showToast('⏳ 正在清空雲端資料...', 'info');
+                try {
+                    // 將當週所有同仁的班別全部一筆一筆用 'off' 洗掉
+                    for(var emp of employees) {
+                        for(var d=0; d<7; d++) {
+                            var dataKey = `${currentYear}_${currentWeek}_${emp.id}_${d}`;
+                            if(scheduleData[dataKey]) {
+                                await fetch(API_URL, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                    body: JSON.stringify({ action: 'saveShift', dataKey: dataKey, shiftKey: 'off', employeeId: currentEmpId, role: userRole }),
+                                    redirect: 'follow'
+                                });
+                                delete scheduleData[dataKey];
+                            }
+                        }
+                    }
+                    renderScheduleGrid();
+                    calculateSummary();
+                    showToast('🗑️ 本週雲端排班資料已成功清除！');
+                } catch(e) {
+                    showToast('❌ 清除過程發生異常，請重試', 'error');
+                }
+            });
+        }
+
+        function exportToCSV() {
+            var daysText = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+            var csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += `鮮茶樂飲料店排班表 - ${currentYear}年第${currentWeek}週\n員工,${daysText.join(',')},總工時,預估薪資\n`;
+
+            employees.forEach(emp => {
+                var row = `"${emp.name}"`;
+                var empTotalHours = 0;
+                for (var day = 0; day < 7; day++) {
+                    var dataKey = `${currentYear}_${currentWeek}_${emp.id}_${day}`;
+                    var shiftKey = scheduleData[dataKey];
+                    if (shiftKey && shiftTypes[shiftKey]) {
+                        row += `,"${shiftTypes[shiftKey].name}"`;
+                        empTotalHours += shiftTypes[shiftKey].hours;
+                    } else row += `,"休"`;
+                }
+                row += `,${empTotalHours},${empTotalHours * emp.rate}\n`;
+                csvContent += row;
+            });
+
+            var encodedUri = encodeURI(csvContent);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `鮮茶樂排班表_${currentYear}_第${currentWeek}週.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('📊 已順利匯出 CSV 報表！');
+        }
+
+        // --- 背景音樂控制 (配合你指定的音樂檔名) ---
+        var bgAudio = new Audio('我的音樂.mp3');
+        bgAudio.loop = true;
+        bgAudio.volume = 0.4;
+        var isMusicPlaying = false;
+
+        // --- 美女店長點擊音效 ---
+        var managerAudio = new Audio('manager.mp3');
+        managerAudio.volume = 0.6;
+
+        function toggleMusic() {
+            var icon = document.getElementById('musicIcon');
+            var label = document.getElementById('musicLabel');
+            var btn = document.getElementById('musicToggleBtn');
+
+            if (isMusicPlaying) {
+                bgAudio.pause();
+                icon.className = 'fa-solid fa-play';
+                label.textContent = '播放音樂';
+                btn.classList.remove('bg-emerald-600', 'border-emerald-400');
+                btn.classList.add('bg-emerald-900/60', 'border-emerald-600');
+                isMusicPlaying = false;
+                showToast('🎵 音樂已暫停', 'info');
+            } else {
+                bgAudio.play().then(() => {
+                    icon.className = 'fa-solid fa-pause';
+                    label.textContent = '暫停音樂';
+                    btn.classList.remove('bg-emerald-900/60', 'border-emerald-600');
+                    btn.classList.add('bg-emerald-600', 'border-emerald-400');
+                    isMusicPlaying = true;
+                    showToast('🎵 背景音樂播放中...');
+                }).catch(() => {
+                    showToast('❌ 無法播放音樂，請確認檔案在專案內且檔名正確。', 'error');
+                });
+            }
+        }
+
+        // --- 10 句專屬飲料店熱血排班催班語錄 ---
+        var quotes = [
+            "下週班表比大冰奶還缺！大家快來填滿，不然店長就要進廚房搖到手抽筋了～",
+            "假日班表目前空得像沒加料的純喫茶，快來拯救店長寂寞的心靈吧！",
+            "聽說下週有爆量外送單？體力滿分的小夥伴快把班畫起來，店長貼力布買好了！",
+            "不要再看班表嘆氣了，班表又不會自己長出名字，各位護店神獸快填班吧！",
+            "大家把班填滿，店長才有體力賺錢，下個月大家的薪水和點心才能加料不加價啊～",
+            "吧台缺人、廚房也缺人，再不填班，下週店長就要一個人分身術了啦！",
+            "下週班表需要各位『手搖界大師』的加持，空缺處等你們用名字填滿喔！",
+            "假日冷氣很涼、客人很熱情，就差你的一行班表了，快來合體上班吧！",
+            "班表填得好，放假沒煩惱！下週黃金時段還空著，先搶先贏喔～",
+            "別讓店長下週一個人在店裡跟茶桶對眼，快來把空班畫好畫滿！"
+        ];
+
+        var quoteTimeout;
+        function triggerRandomQuote() {
+            var managerImg = document.getElementById('manager-img');
+            var quoteBox = document.getElementById('manager-quote');
+            var quoteText = document.getElementById('quote-text');
+            
+            // 播放店長點擊音效
+            managerAudio.currentTime = 0;
+            managerAudio.play().catch(err => console.log('店長音效播放失敗:', err));
+            
+            quoteText.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+            
+            managerImg.classList.remove('animate-float-glow', 'animate-jump');
+            void managerImg.offsetWidth; // 強制瀏覽器重繪觸發動畫
+            managerImg.classList.add('animate-jump');
+            
+            setTimeout(() => {
+                managerImg.classList.remove('animate-jump');
+                managerImg.classList.add('animate-float-glow');
+            }, 500);
+
+            quoteBox.classList.remove('opacity-0');
+            quoteBox.classList.add('opacity-100');
+            
+            if (quoteTimeout) clearTimeout(quoteTimeout);
+            quoteTimeout = setTimeout(() => {
+                quoteBox.classList.remove('opacity-100');
+                quoteBox.classList.add('opacity-0');
+            }, 4000);
+        }
+
+        function scheduleNextQuote() {
+            setTimeout(() => { triggerRandomQuote(); scheduleNextQuote(); }, Math.random() * 10000 + 10000);
+        }
+        setTimeout(scheduleNextQuote, 5000);
+    </script>
+</body>
+</html>

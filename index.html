@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鮮茶樂 - 首頁</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        .btn-hover-effect:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex items-center justify-center relative bg-transparent">
+
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('background.png'); background-size: cover; background-position: center; opacity: 0.5; z-index: -1; pointer-events: none;"></div>
+
+    <div class="glass-card p-10 md:p-14 rounded-3xl max-w-lg w-full mx-4 text-center transform transition-all duration-500 hover:scale-[1.02] relative">
+        
+        <div class="absolute top-4 right-4 flex items-center gap-3">
+            <div class="text-xs font-semibold text-slate-500 bg-slate-100/50 px-2 py-1 rounded-md">
+                Hi, <span id="userNameDisplay">User</span>
+            </div>
+            <button onclick="logout()" class="text-xs text-rose-500 hover:text-rose-700 font-bold transition flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-md hover:bg-rose-100">
+                <i class="fa-solid fa-right-from-bracket"></i> 登出
+            </button>
+        </div>
+
+        <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner mt-4">
+            <i class="fa-solid fa-mug-hot text-4xl text-emerald-600"></i>
+        </div>
+        
+        <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-500 mb-2">鮮茶樂</h1>
+        <p class="text-slate-500 mb-10 font-medium">飲料店專屬管理系統</p>
+
+        <div class="space-y-4">
+            <!-- 連結完美更新 -->
+            <a href="schedule.html" class="btn-hover-effect w-full flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-2xl transition duration-300">
+                <i class="fa-solid fa-calendar-days text-xl"></i>
+                <span class="text-lg">員工排班系統</span>
+            </a>
+            
+            <a href="inventory.html" id="inventoryBtn" class="btn-hover-effect w-full flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-6 rounded-2xl transition duration-300">
+                <i class="fa-solid fa-boxes-stacked text-xl"></i>
+                <span class="text-lg">原物料庫存管理</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        var role = localStorage.getItem('tealove_role');
+        var username = localStorage.getItem('tealove_username');
+
+        if (!role) {
+            window.location.href = 'login.html';
+        } else {
+            document.getElementById('userNameDisplay').textContent = username || (role === 'admin' ? '管理員' : '店員');
+            if (role === 'employee') {
+                var invBtn = document.getElementById('inventoryBtn');
+                if (invBtn) invBtn.style.display = 'none';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('tealove_role');
+            localStorage.removeItem('tealove_username');
+            localStorage.removeItem('tealove_empId');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

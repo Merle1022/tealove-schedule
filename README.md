@@ -22,6 +22,7 @@ index.html       功能入口
 login.html       登入頁
 schedule.html    排班與統計
 inventory.html   庫存管理
+gas/             Google Apps Script API v2 原始碼與部署說明
 BUILDLOG.md      公開開發歷程
 ```
 

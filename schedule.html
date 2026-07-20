@@ -23,8 +23,14 @@
             border-radius: 3px;
         }
         @keyframes jump {
-            0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 15px rgba(236, 72, 153, 0.6)); }
-            50% { transform: translateY(-30px) rotate(5deg); filter: drop-shadow(0 0 25px rgba(236, 72, 153, 0.8)); }
+            0%, 100% {
+                transform: translateY(0);
+                filter: drop-shadow(0 5px 14px rgba(17, 48, 38, 0.24)) drop-shadow(0 0 12px rgba(218, 190, 128, 0.10));
+            }
+            50% {
+                transform: translateY(-24px) rotate(4deg);
+                filter: drop-shadow(0 7px 18px rgba(17, 48, 38, 0.28)) drop-shadow(0 0 16px rgba(218, 190, 128, 0.14));
+            }
         }
         .animate-jump {
             animation: jump 0.5s ease-in-out;
@@ -32,11 +38,11 @@
         @keyframes float-glow {
             0%, 100% { 
                 transform: translateY(0);
-                filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.3)) drop-shadow(0 0 20px rgba(236, 72, 153, 0.1));
+                filter: drop-shadow(0 5px 12px rgba(17, 48, 38, 0.20)) drop-shadow(0 0 10px rgba(184, 202, 164, 0.10));
             }
             50% { 
-                transform: translateY(-8px);
-                filter: drop-shadow(0 0 15px rgba(236, 72, 153, 0.5)) drop-shadow(0 0 30px rgba(236, 72, 153, 0.2));
+                transform: translateY(-6px);
+                filter: drop-shadow(0 7px 15px rgba(17, 48, 38, 0.24)) drop-shadow(0 0 14px rgba(218, 190, 128, 0.12));
             }
         }
         .animate-float-glow {
@@ -635,7 +641,7 @@
 
         // --- 美女店長點擊音效 ---
         var managerAudio = new Audio('manager.mp3');
-        managerAudio.volume = 0.6;
+        managerAudio.volume = 0.22;
 
         function toggleMusic() {
             var icon = document.getElementById('musicIcon');
@@ -684,7 +690,8 @@
             var quoteBox = document.getElementById('manager-quote');
             var quoteText = document.getElementById('quote-text');
             
-            // 播放店長點擊音效
+            // 音效只由使用者點擊觸發；先停止上一段，避免快速連點時聲音疊加
+            managerAudio.pause();
             managerAudio.currentTime = 0;
             managerAudio.play().catch(err => console.log('店長音效播放失敗:', err));
             
@@ -709,10 +716,6 @@
             }, 4000);
         }
 
-        function scheduleNextQuote() {
-            setTimeout(() => { triggerRandomQuote(); scheduleNextQuote(); }, Math.random() * 10000 + 10000);
-        }
-        setTimeout(scheduleNextQuote, 5000);
     </script>
 </body>
 </html>

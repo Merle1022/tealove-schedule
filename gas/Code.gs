@@ -4,7 +4,7 @@
  * 安全邊界：
  * - 僅供匿名測試資料與作品展示，不得連接正式員工、薪資或門市資料。
  * - 公開 Web App URL 不是祕密；所有受保護動作都必須驗證短期 session token。
- * - Script ID、Spreadsheet ID、部署網址與密碼不得寫進公開 repo。
+ * - Demo Web App URL 本來就是公開入口；Script ID、Spreadsheet ID、雜湊祕密與正式密碼不得寫進公開 repo。
  */
 
 var APP = {
@@ -90,6 +90,8 @@ function setupV2() {
   }
 
   ss.setSpreadsheetTimeZone(APP.TIMEZONE);
+  var accounts = requireSheet_(ss, APP.SHEETS.ACCOUNTS);
+  accounts.getRange(1, 7, 1, 4).setValues([['啟用狀態', '密碼雜湊', '最後登入時間', '顯示於班表']]);
   ensureSheet_(ss, APP.SHEETS.SETTINGS, ['設定鍵', '設定值', '說明']);
   ensureSheet_(ss, APP.SHEETS.SHIFTS, ['班別代碼', '班別名稱', '開始時間', '結束時間', '工時', '最低人數', '最高人數', '啟用']);
   ensureSheet_(ss, APP.SHEETS.AUDIT, ['時間', '員工ID', '動作', '資源', '結果', '說明']);
@@ -116,21 +118,6 @@ function migrateDemoPasswords() {
   }
 
   return '已遷移 ' + migrated + ' 個 Demo 帳號。';
-}
-
-/** 前端切換到 v2 後再執行，避免舊 inventory.html 找不到原 ID。 */
-function migrateLegacyInventoryItem() {
-  var sheet = requireSheet_(getSpreadsheet_(), APP.SHEETS.INVENTORY);
-  var values = sheet.getDataRange().getValues();
-  for (var i = 1; i < values.length; i++) {
-    if (String(values[i][0]) === 'qty-weed') {
-      sheet.getRange(i + 1, 1, 1, 8).setValues([[
-        'qty-jelly', '椰果', 8, new Date(), '箱', 3, '正常', 'v2_migration'
-      ]]);
-      return '已將舊測試品項遷移為椰果。';
-    }
-  }
-  return '找不到需遷移的舊品項。';
 }
 
 function health_() {
@@ -456,6 +443,8 @@ function getEmployees_(ss) {
   var result = [];
   for (var i = 1; i < values.length; i++) {
     if (!values[i][0]) continue;
+    var visibleInSchedule = values[i][9] === '' || values[i][9] === undefined ? true : toBoolean_(values[i][9]);
+    if (!visibleInSchedule) continue;
     result.push({
       id: String(values[i][0]),
       role: String(values[i][3]),
@@ -550,7 +539,7 @@ function addSeedWeek_(rows, year, week) {
 function seedInventory_() {
   var sheet = requireSheet_(getSpreadsheet_(), APP.SHEETS.INVENTORY);
   var values = sheet.getDataRange().getValues();
-  var defaults = { 'qty-tea': 4, 'qty-boba': 2, 'qty-sugar': 8, 'qty-jelly': 6, 'qty-weed': 50 };
+  var defaults = { 'qty-tea': 4, 'qty-boba': 2, 'qty-sugar': 8, 'qty-jelly': 6 };
   for (var i = 1; i < values.length; i++) {
     var itemId = String(values[i][0] || '');
     if (defaults[itemId] === undefined) continue;

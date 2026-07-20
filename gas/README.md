@@ -11,8 +11,7 @@
 5. 手動執行 `migrateDemoPasswords()`；它會將 C 欄 Demo 密碼轉為 HMAC 後清空明文。
 6. 以新的 Web App deployment 發布：執行身分使用擁有者，存取範圍需允許 Demo 訪客呼叫登入端點。
 7. 先測試 `health`、錯誤登入、正確登入、session 失效、排班讀取與儀表板讀取。
-8. 前端完成 v2 token 串接後，才執行 `migrateLegacyInventoryItem()`，把舊測試品項換成「椰果」。
-9. 完成讀寫與重設測試後，才把新 deployment URL 套用到 GitHub Pages。
+8. 完成讀寫與重設測試後，才把新 deployment URL 套用到 GitHub Pages。
 
 ## API 動作
 

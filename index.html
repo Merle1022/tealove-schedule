@@ -3,77 +3,322 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鮮茶樂 - 首頁</title>
+    <title>鮮茶樂｜店務營運儀表板</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        :root { color-scheme: light; }
+        html, body { overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; background: #f2f0e9; }
+        canvas { max-width: 100% !important; }
+        article { min-width: 0; }
+        .serif { font-family: 'Noto Serif TC', serif; }
+        .paper {
+            background: rgba(255, 255, 252, .88);
+            border: 1px solid rgba(255, 255, 255, .78);
+            box-shadow: 0 18px 50px rgba(27, 64, 52, .09);
+            backdrop-filter: blur(14px);
         }
-        .btn-hover-effect:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .metric-card { transition: transform .25s ease, box-shadow .25s ease; }
+        .metric-card:hover { transform: translateY(-2px); box-shadow: 0 16px 28px rgba(27, 64, 52, .1); }
+        .skeleton { animation: pulse 1.5s ease-in-out infinite; }
+        @keyframes pulse { 50% { opacity: .45; } }
     </style>
 </head>
-<body class="text-slate-800 min-h-screen flex items-center justify-center relative bg-transparent">
+<body class="min-h-screen text-slate-800">
+    <div class="fixed inset-0 -z-20 bg-cover bg-center opacity-[.13]" style="background-image:url('background.png')"></div>
+    <div class="fixed inset-0 -z-10 bg-gradient-to-br from-stone-100/80 via-emerald-50/70 to-amber-50/60"></div>
 
-    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('background.png'); background-size: cover; background-position: center; opacity: 0.5; z-index: -1; pointer-events: none;"></div>
+    <header class="sticky top-0 z-30 border-b border-white/70 bg-[#f7f5ef]/90 backdrop-blur-xl">
+        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 lg:px-8">
+            <a href="index.html" class="flex items-center gap-3">
+                <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-800 text-white shadow-lg shadow-emerald-900/15">
+                    <i class="fa-solid fa-mug-hot"></i>
+                </span>
+                <span>
+                    <strong class="serif block text-xl tracking-wide text-emerald-950">鮮茶樂</strong>
+                    <span class="text-[11px] font-medium tracking-[.18em] text-emerald-700">STORE OPERATIONS</span>
+                </span>
+            </a>
 
-    <div class="glass-card p-10 md:p-14 rounded-3xl max-w-lg w-full mx-4 text-center transform transition-all duration-500 hover:scale-[1.02] relative">
-        
-        <div class="absolute top-4 right-4 flex items-center gap-3">
-            <div class="text-xs font-semibold text-slate-500 bg-slate-100/50 px-2 py-1 rounded-md">
-                Hi, <span id="userNameDisplay">User</span>
+            <nav class="hidden items-center gap-2 md:flex">
+                <a href="schedule.html" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-emerald-800">排班管理</a>
+                <a href="inventory.html" id="inventoryNav" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-emerald-800">庫存管理</a>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <div class="hidden text-right sm:block">
+                    <div id="userName" class="text-sm font-bold text-slate-700">—</div>
+                    <div id="userRole" class="text-[11px] text-slate-400">讀取中</div>
+                </div>
+                <button onclick="TeaLove.logout()" class="h-10 w-10 rounded-xl border border-rose-100 bg-white/80 text-rose-500 transition hover:bg-rose-50" title="登出">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </button>
             </div>
-            <button onclick="logout()" class="text-xs text-rose-500 hover:text-rose-700 font-bold transition flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-md hover:bg-rose-100">
-                <i class="fa-solid fa-right-from-bracket"></i> 登出
-            </button>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-7 lg:px-8 lg:py-10">
+        <section class="mb-7 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+            <div>
+                <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-emerald-800">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                    匿名 Demo 資料
+                </div>
+                <h1 class="serif text-3xl font-bold tracking-tight text-emerald-950 md:text-4xl">店務營運儀表板</h1>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">從排班資料快速掌握工時、人事成本、人力分布與庫存提醒。所有數字皆為作品展示用測試資料。</p>
+            </div>
+
+            <div id="weekControls" class="paper flex items-center gap-2 rounded-2xl p-2">
+                <button onclick="changeWeek(-1)" class="h-10 w-10 rounded-xl text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-800" aria-label="上一週"><i class="fa-solid fa-chevron-left"></i></button>
+                <label class="min-w-36 text-center">
+                    <span class="block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Selected week</span>
+                    <span id="weekLabel" class="serif text-base font-bold text-slate-700">讀取中</span>
+                </label>
+                <button onclick="changeWeek(1)" class="h-10 w-10 rounded-xl text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-800" aria-label="下一週"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </section>
+
+        <section id="employeeMode" class="paper hidden rounded-3xl p-7 text-center md:p-10">
+            <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-2xl text-emerald-700"><i class="fa-solid fa-calendar-check"></i></div>
+            <h2 class="serif text-2xl font-bold text-emerald-950">你的排班入口已準備好</h2>
+            <p class="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-500">營運成本與全店提醒僅開放管理員查看。店員仍可進入排班頁檢視並編輯自己的班表。</p>
+            <a href="schedule.html" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"><i class="fa-solid fa-arrow-right"></i>前往排班</a>
+        </section>
+
+        <div id="dashboardContent">
+            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <article class="paper metric-card rounded-3xl p-5">
+                    <div class="flex items-start justify-between"><span class="text-sm font-semibold text-slate-500">每週總工時</span><span class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"><i class="fa-regular fa-clock"></i></span></div>
+                    <div class="mt-5 flex items-baseline gap-2"><strong id="totalHours" class="text-3xl font-bold text-slate-800">—</strong><span class="text-sm text-slate-400">小時</span></div>
+                    <div id="hoursCompare" class="mt-2 text-xs text-slate-400">與上週比較</div>
+                </article>
+                <article class="paper metric-card rounded-3xl p-5">
+                    <div class="flex items-start justify-between"><span class="text-sm font-semibold text-slate-500">預估人事成本</span><span class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><i class="fa-solid fa-coins"></i></span></div>
+                    <div class="mt-5 flex items-baseline gap-2"><span class="text-sm text-slate-400">NT$</span><strong id="totalPayroll" class="text-3xl font-bold text-slate-800">—</strong></div>
+                    <div id="payrollCompare" class="mt-2 text-xs text-slate-400">與上週比較</div>
+                </article>
+                <article class="paper metric-card rounded-3xl p-5">
+                    <div class="flex items-start justify-between"><span class="text-sm font-semibold text-slate-500">本週排班人數</span><span class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-100 text-sky-700"><i class="fa-solid fa-users"></i></span></div>
+                    <div class="mt-5 flex items-baseline gap-2"><strong id="scheduledEmployees" class="text-3xl font-bold text-slate-800">—</strong><span class="text-sm text-slate-400">人</span></div>
+                    <div class="mt-2 text-xs text-slate-400">至少有一個班次</div>
+                </article>
+                <article class="paper metric-card rounded-3xl p-5">
+                    <div class="flex items-start justify-between"><span class="text-sm font-semibold text-slate-500">需留意事項</span><span class="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-100 text-rose-700"><i class="fa-solid fa-bell"></i></span></div>
+                    <div class="mt-5 flex items-baseline gap-2"><strong id="alertCount" class="text-3xl font-bold text-slate-800">—</strong><span class="text-sm text-slate-400">項</span></div>
+                    <div class="mt-2 text-xs text-slate-400">人力、工時與低庫存</div>
+                </article>
+            </section>
+
+            <section class="mt-5 grid gap-5 xl:grid-cols-5">
+                <article class="paper rounded-3xl p-5 md:p-6 xl:col-span-3">
+                    <div class="mb-5 flex items-center justify-between">
+                        <div><h2 class="serif text-lg font-bold text-slate-800">每位員工工時</h2><p class="mt-1 text-xs text-slate-400">比較本週排班負荷</p></div>
+                        <span class="rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">Hours</span>
+                    </div>
+                    <div class="h-72"><canvas id="employeeChart"></canvas></div>
+                </article>
+                <article class="paper rounded-3xl p-5 md:p-6 xl:col-span-2">
+                    <div class="mb-5"><h2 class="serif text-lg font-bold text-slate-800">班別分布</h2><p class="mt-1 text-xs text-slate-400">本週各班別所占比例</p></div>
+                    <div class="mx-auto h-72 max-w-sm"><canvas id="shiftChart"></canvas></div>
+                </article>
+            </section>
+
+            <section class="mt-5 grid gap-5 xl:grid-cols-5">
+                <article class="paper rounded-3xl p-5 md:p-6 xl:col-span-3">
+                    <div class="mb-5"><h2 class="serif text-lg font-bold text-slate-800">每日人力分布</h2><p class="mt-1 text-xs text-slate-400">星期一至星期日的排班人次</p></div>
+                    <div class="h-64"><canvas id="dailyChart"></canvas></div>
+                </article>
+                <article class="paper rounded-3xl p-5 md:p-6 xl:col-span-2">
+                    <div class="mb-4 flex items-center justify-between"><div><h2 class="serif text-lg font-bold text-slate-800">提醒中心</h2><p class="mt-1 text-xs text-slate-400">需要優先處理的店務訊號</p></div><i class="fa-solid fa-sparkles text-amber-500"></i></div>
+                    <div id="alertsList" class="space-y-3"></div>
+                </article>
+            </section>
+
+            <section class="mt-5 grid gap-4 md:grid-cols-3">
+                <a href="schedule.html" class="paper group rounded-3xl p-5 transition hover:border-emerald-200">
+                    <div class="flex items-center justify-between"><span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><i class="fa-solid fa-calendar-days"></i></span><i class="fa-solid fa-arrow-right text-slate-300 transition group-hover:translate-x-1 group-hover:text-emerald-600"></i></div>
+                    <h3 class="mt-5 font-bold text-slate-800">前往排班管理</h3><p class="mt-1 text-xs leading-5 text-slate-400">查看、調整班別並匯出 CSV</p>
+                </a>
+                <a href="inventory.html" class="paper group rounded-3xl p-5 transition hover:border-amber-200">
+                    <div class="flex items-center justify-between"><span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700"><i class="fa-solid fa-boxes-stacked"></i></span><i class="fa-solid fa-arrow-right text-slate-300 transition group-hover:translate-x-1 group-hover:text-amber-600"></i></div>
+                    <h3 class="mt-5 font-bold text-slate-800">管理原物料庫存</h3><p class="mt-1 text-xs leading-5 text-slate-400">追蹤庫存數量與低量門檻</p>
+                </a>
+                <button onclick="confirmReset()" class="paper group rounded-3xl p-5 text-left transition hover:border-rose-200">
+                    <div class="flex items-center justify-between"><span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 text-rose-700"><i class="fa-solid fa-rotate"></i></span><i class="fa-solid fa-arrow-right text-slate-300 transition group-hover:translate-x-1 group-hover:text-rose-600"></i></div>
+                    <h3 class="mt-5 font-bold text-slate-800">重設 Demo 資料</h3><p class="mt-1 text-xs leading-5 text-slate-400">恢復預設班表與庫存測試情境</p>
+                </button>
+            </section>
+
+            <p id="dataNotice" class="mt-6 text-center text-[11px] leading-5 text-slate-400">工時與提醒門檻僅供 Demo 展示，不構成勞動法令判定。</p>
         </div>
 
-        <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner mt-4">
-            <i class="fa-solid fa-mug-hot text-4xl text-emerald-600"></i>
-        </div>
-        
-        <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-500 mb-2">鮮茶樂</h1>
-        <p class="text-slate-500 mb-10 font-medium">飲料店專屬管理系統</p>
+        <section id="loadingState" class="paper mt-5 rounded-3xl p-10 text-center">
+            <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-700"></div>
+            <p class="mt-4 text-sm font-semibold text-slate-500">正在整理本週營運資料…</p>
+        </section>
 
-        <div class="space-y-4">
-            <!-- 連結完美更新 -->
-            <a href="schedule.html" class="btn-hover-effect w-full flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-2xl transition duration-300">
-                <i class="fa-solid fa-calendar-days text-xl"></i>
-                <span class="text-lg">員工排班系統</span>
-            </a>
-            
-            <a href="inventory.html" id="inventoryBtn" class="btn-hover-effect w-full flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-6 rounded-2xl transition duration-300">
-                <i class="fa-solid fa-boxes-stacked text-xl"></i>
-                <span class="text-lg">原物料庫存管理</span>
-            </a>
-        </div>
-    </div>
+        <section id="errorState" class="paper mt-5 hidden rounded-3xl border-rose-100 p-8 text-center">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-600"><i class="fa-solid fa-cloud-arrow-down"></i></div>
+            <h2 class="serif mt-4 text-xl font-bold text-slate-800">資料暫時沒有回來</h2>
+            <p id="errorText" class="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500"></p>
+            <button onclick="loadDashboard()" class="mt-5 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800">重新整理</button>
+        </section>
+    </main>
 
+    <div id="toast" class="pointer-events-none fixed bottom-5 right-5 z-50 translate-y-10 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white opacity-0 shadow-2xl transition-all"></div>
+
+    <script src="app.js"></script>
     <script>
-        var role = localStorage.getItem('tealove_role');
-        var username = localStorage.getItem('tealove_username');
+        var session = TeaLove.requireSession();
+        var current = TeaLove.getIsoWeek(new Date());
+        var currentYear = current.year;
+        var currentWeek = current.week;
+        var charts = {};
 
-        if (!role) {
-            window.location.href = 'login.html';
-        } else {
-            document.getElementById('userNameDisplay').textContent = username || (role === 'admin' ? '管理員' : '店員');
-            if (role === 'employee') {
-                var invBtn = document.getElementById('inventoryBtn');
-                if (invBtn) invBtn.style.display = 'none';
+        if (session) {
+            document.getElementById('userName').textContent = session.name || 'Demo 使用者';
+            document.getElementById('userRole').textContent = session.role === 'admin' ? '管理員模式' : '店員模式';
+            if (session.role !== 'admin') {
+                document.getElementById('inventoryNav').classList.add('hidden');
+                document.getElementById('weekControls').classList.add('hidden');
+                document.getElementById('dashboardContent').classList.add('hidden');
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('employeeMode').classList.remove('hidden');
+            } else {
+                loadDashboard();
             }
         }
 
-        function logout() {
-            localStorage.removeItem('tealove_role');
-            localStorage.removeItem('tealove_username');
-            localStorage.removeItem('tealove_empId');
-            window.location.href = 'login.html';
+        function formatWeek() {
+            document.getElementById('weekLabel').textContent = currentYear + ' 年・第 ' + currentWeek + ' 週';
+        }
+
+        function changeWeek(offset) {
+            currentWeek += offset;
+            if (currentWeek < 1) { currentYear -= 1; currentWeek = 52; }
+            if (currentWeek > 53) { currentYear += 1; currentWeek = 1; }
+            loadDashboard();
+        }
+
+        async function loadDashboard() {
+            formatWeek();
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('dashboardContent').classList.add('opacity-50', 'pointer-events-none');
+            try {
+                var data = await TeaLove.request('getDashboard', { year: currentYear, week: currentWeek });
+                renderMetrics(data);
+                renderCharts(data);
+                renderAlerts(data.alerts);
+                document.getElementById('dataNotice').textContent = data.notice;
+            } catch (error) {
+                if (error.code === 'UNAUTHORIZED') return window.location.replace('login.html?expired=1');
+                document.getElementById('errorText').textContent = TeaLove.getErrorMessage(error);
+                document.getElementById('errorState').classList.remove('hidden');
+            } finally {
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('dashboardContent').classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        function renderMetrics(data) {
+            document.getElementById('totalHours').textContent = Number(data.totals.hours || 0).toLocaleString();
+            document.getElementById('totalPayroll').textContent = Math.round(data.totals.payroll || 0).toLocaleString();
+            document.getElementById('scheduledEmployees').textContent = data.totals.scheduledEmployees || 0;
+            var alertCount = data.alerts.overtime.length + data.alerts.understaffedDays.length + data.alerts.lowStock.length;
+            document.getElementById('alertCount').textContent = alertCount;
+            renderComparison('hoursCompare', data.comparison.hours, data.comparison.previousWeek);
+            renderComparison('payrollCompare', data.comparison.payroll, data.comparison.previousWeek);
+        }
+
+        function renderComparison(id, comparison, previousWeek) {
+            var el = document.getElementById(id);
+            var diff = Number(comparison.difference || 0);
+            var percent = Number(comparison.percent || 0);
+            var direction = diff > 0 ? '↑' : diff < 0 ? '↓' : '—';
+            el.className = 'mt-2 text-xs font-semibold ' + (diff > 0 ? 'text-amber-600' : diff < 0 ? 'text-emerald-600' : 'text-slate-400');
+            el.textContent = direction + ' ' + Math.abs(percent).toFixed(1) + '%，較第 ' + previousWeek + ' 週';
+        }
+
+        function destroyChart(name) {
+            if (charts[name]) charts[name].destroy();
+        }
+
+        function renderCharts(data) {
+            destroyChart('employee');
+            destroyChart('daily');
+            destroyChart('shift');
+            var commonGrid = { color: 'rgba(100,116,139,.12)', drawBorder: false };
+
+            charts.employee = new Chart(document.getElementById('employeeChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.employeeHours.map(function (item) { return item.name; }),
+                    datasets: [{ label: '工時', data: data.employeeHours.map(function (item) { return item.hours; }), backgroundColor: '#2f7d65', borderRadius: 8, maxBarThickness: 42 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: commonGrid, ticks: { precision: 0 } } } }
+            });
+
+            charts.daily = new Chart(document.getElementById('dailyChart'), {
+                type: 'line',
+                data: {
+                    labels: ['一', '二', '三', '四', '五', '六', '日'],
+                    datasets: [{ label: '排班人次', data: data.dailyCounts, borderColor: '#b7791f', backgroundColor: 'rgba(245, 158, 11, .16)', pointBackgroundColor: '#b7791f', pointRadius: 4, tension: .35, fill: true }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: commonGrid, ticks: { precision: 0 } } } }
+            });
+
+            var shiftEntries = Object.entries(data.shiftDistribution || {});
+            var shiftNames = { morning: '早班', middle: '中班', evening: '晚班', custom: '外送班' };
+            charts.shift = new Chart(document.getElementById('shiftChart'), {
+                type: 'doughnut',
+                data: { labels: shiftEntries.map(function (item) { return shiftNames[item[0]] || item[0]; }), datasets: [{ data: shiftEntries.map(function (item) { return Array.isArray(item[1]) ? item[1].reduce(function (sum, value) { return sum + Number(value || 0); }, 0) : Number(item[1] || 0); }), backgroundColor: ['#2f7d65', '#d99b43', '#536a96', '#7da4a0'], borderColor: '#fff', borderWidth: 4, hoverOffset: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '67%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, padding: 16 } } } }
+            });
+        }
+
+        function renderAlerts(alerts) {
+            var container = document.getElementById('alertsList');
+            var items = [];
+            alerts.overtime.forEach(function (item) { items.push({ icon: 'fa-clock', tone: 'rose', title: item.name + ' 工時偏高', detail: item.hours + ' 小時' }); });
+            alerts.understaffedDays.forEach(function (item) { items.push({ icon: 'fa-user-minus', tone: 'amber', title: '星期' + ['一','二','三','四','五','六','日'][item.day] + ' 人力不足', detail: item.count + ' 人排班' }); });
+            alerts.lowStock.forEach(function (item) { items.push({ icon: 'fa-box-open', tone: 'sky', title: item.name + ' 庫存偏低', detail: item.quantity + ' ' + item.unit + '／門檻 ' + item.threshold }); });
+            if (!items.length) {
+                container.innerHTML = '<div class="rounded-2xl bg-emerald-50 p-5 text-center"><i class="fa-solid fa-circle-check text-xl text-emerald-600"></i><p class="mt-2 text-sm font-bold text-emerald-800">本週狀態良好</p><p class="mt-1 text-xs text-emerald-600">目前沒有需要優先處理的提醒</p></div>';
+                return;
+            }
+            var toneClasses = { rose: 'bg-rose-100 text-rose-700', amber: 'bg-amber-100 text-amber-700', sky: 'bg-sky-100 text-sky-700' };
+            container.innerHTML = items.slice(0, 6).map(function (item) {
+                return '<div class="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white/70 p-3">' +
+                    '<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ' + toneClasses[item.tone] + '"><i class="fa-solid ' + item.icon + '"></i></span>' +
+                    '<div class="min-w-0"><p class="truncate text-sm font-bold text-slate-700">' + item.title + '</p><p class="mt-0.5 text-xs text-slate-400">' + item.detail + '</p></div></div>';
+            }).join('');
+        }
+
+        async function confirmReset() {
+            if (!window.confirm('確定要把 Demo 班表與庫存恢復為預設測試資料嗎？')) return;
+            try {
+                await TeaLove.request('resetDemoData');
+                showToast('Demo 資料已重設');
+                var latest = TeaLove.getIsoWeek(new Date());
+                currentYear = latest.year;
+                currentWeek = latest.week;
+                loadDashboard();
+            } catch (error) {
+                showToast(TeaLove.getErrorMessage(error), true);
+            }
+        }
+
+        function showToast(message, isError) {
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.toggle('bg-rose-700', !!isError);
+            toast.classList.toggle('bg-slate-900', !isError);
+            toast.classList.remove('translate-y-10', 'opacity-0');
+            setTimeout(function () { toast.classList.add('translate-y-10', 'opacity-0'); }, 2600);
         }
     </script>
 </body>

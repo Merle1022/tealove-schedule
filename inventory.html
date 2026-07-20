@@ -50,42 +50,7 @@
             </div>
 
             <div class="space-y-4" id="inventoryContainer">
-                <!-- 綠茶葉 -->
-                <div class="flex items-center justify-between p-4 bg-white/60 rounded-xl border border-slate-200 hover:bg-white transition">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600"><i class="fa-solid fa-leaf text-xl"></i></div>
-                        <div><h3 class="font-bold text-lg text-slate-800">特級綠茶葉</h3><p class="text-xs text-slate-500">單位：包 (600g)</p></div>
-                    </div>
-                    <input type="number" id="qty-tea" min="0" placeholder="0" class="w-24 text-center text-lg font-bold text-slate-700 bg-white border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                </div>
-
-                <!-- 珍珠 -->
-                <div class="flex items-center justify-between p-4 bg-white/60 rounded-xl border border-slate-200 hover:bg-white transition">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-700"><i class="fa-solid fa-circle text-xl"></i></div>
-                        <div><h3 class="font-bold text-lg text-slate-800">黑糖珍珠</h3><p class="text-xs text-slate-500">單位：箱 (20kg)</p></div>
-                    </div>
-                    <input type="number" id="qty-boba" min="0" placeholder="0" class="w-24 text-center text-lg font-bold text-slate-700 bg-white border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                </div>
-
-                <!-- 糖漿 -->
-                <div class="flex items-center justify-between p-4 bg-white/60 rounded-xl border border-slate-200 hover:bg-white transition">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600"><i class="fa-solid fa-jug-detergent text-xl"></i></div>
-                        <div><h3 class="font-bold text-lg text-slate-800">蔗糖糖漿</h3><p class="text-xs text-slate-500">單位：桶 (5L)</p></div>
-                    </div>
-                    <input type="number" id="qty-sugar" min="0" placeholder="0" class="w-24 text-center text-lg font-bold text-slate-700 bg-white border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                </div>
-
-                <!-- 特調配方 -->
-                <div class="flex items-center justify-between p-4 bg-rose-50/60 rounded-xl border border-rose-200 hover:bg-rose-50 transition relative overflow-hidden">
-                    <div class="absolute right-0 top-0 w-2 h-full bg-gradient-to-b from-green-400 to-green-600"></div>
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 drop-shadow-md"><i class="fa-solid fa-cannabis text-2xl"></i></div>
-                        <div><h3 class="font-bold text-lg text-green-800">特調配方 (大麻)</h3><p class="text-xs text-rose-500 font-medium">VIP 隱藏菜單專用 / 單位：克 (g)</p></div>
-                    </div>
-                    <input type="number" id="qty-weed" min="0" placeholder="0" class="w-24 text-center text-lg font-bold text-green-700 bg-white border border-green-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
-                </div>
+                <div class="rounded-xl border border-slate-200 bg-white/60 p-6 text-center text-sm text-slate-400">正在讀取庫存品項…</div>
             </div>
 
             <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-6">
@@ -104,109 +69,87 @@
         <span class="text-sm font-medium" id="toastText">庫存已成功儲存！</span>
     </div>
 
+    <script src="app.js"></script>
     <script>
-        var API_URL = "https://script.google.com/macros/s/AKfycbwnGQO2gI_2ixVXyWnvJp33dJNogm1GCY5yGQl-ZxQ-DaPwCByUdlbajAx9a6y6xsqCtg/exec";
-        
-        var role = localStorage.getItem('tealove_role');
-        if (!role) { window.location.href = 'login.html'; } 
-        else if (role !== 'admin') {
-            alert('您沒有權限存取庫存管理頁面！');
-            window.location.href = 'index.html';
-        }
-
-        var inventoryItems = ['qty-tea', 'qty-boba', 'qty-sugar', 'qty-weed'];
-
-        window.onload = function() {
-            loadInventoryFromCloud();
+        var session = TeaLove.requireSession('admin');
+        var inventoryItems = [];
+        var itemStyles = {
+            'qty-tea': { icon: 'fa-leaf', color: 'bg-emerald-100 text-emerald-700' },
+            'qty-boba': { icon: 'fa-circle', color: 'bg-amber-100 text-amber-700' },
+            'qty-sugar': { icon: 'fa-bottle-droplet', color: 'bg-orange-100 text-orange-700' },
+            'qty-jelly': { icon: 'fa-cubes-stacked', color: 'bg-sky-100 text-sky-700' }
         };
 
+        if (session) loadInventoryFromCloud();
+
+        function renderInventory(items) {
+            inventoryItems = items;
+            var container = document.getElementById('inventoryContainer');
+            container.innerHTML = items.map(function (item) {
+                var style = itemStyles[item.id] || { icon: 'fa-box', color: 'bg-slate-100 text-slate-600' };
+                var low = item.status === 'low';
+                return '<div class="flex flex-col gap-4 rounded-xl border p-4 transition sm:flex-row sm:items-center sm:justify-between ' + (low ? 'border-rose-200 bg-rose-50/70' : 'border-slate-200 bg-white/60 hover:bg-white') + '">' +
+                    '<div class="flex items-center gap-4"><div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full ' + style.color + '"><i class="fa-solid ' + style.icon + ' text-xl"></i></div>' +
+                    '<div><div class="flex flex-wrap items-center gap-2"><h3 class="text-lg font-bold text-slate-800">' + item.name + '</h3>' + (low ? '<span class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">低庫存</span>' : '') + '</div>' +
+                    '<p class="text-xs text-slate-500">單位：' + (item.unit || '未設定') + '・提醒門檻：' + item.threshold + '</p></div></div>' +
+                    '<input type="number" id="' + item.id + '" min="0" value="' + item.quantity + '" aria-label="' + item.name + '庫存數量" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-center text-lg font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 sm:w-28">' +
+                    '</div>';
+            }).join('');
+        }
+
         async function loadInventoryFromCloud() {
-            document.getElementById('lastSavedTime').textContent = "正在讀取雲端庫存...";
+            document.getElementById('lastSavedTime').textContent = '正在讀取雲端庫存…';
             try {
-                var response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'getInventory' }),
-                    redirect: 'follow'
-                });
-                var result = await response.json();
-                if (result.success) {
-                    inventoryItems.forEach(id => {
-                        var el = document.getElementById(id);
-                        if (el && result.inventory[id] !== undefined) {
-                            el.value = result.inventory[id];
-                        }
-                    });
-                    document.getElementById('lastSavedTime').textContent = result.lastSavedTime ? "最後同步：" + result.lastSavedTime : "尚無儲存紀錄";
-                } else {
-                    document.getElementById('lastSavedTime').textContent = "讀取失敗：" + result.message;
-                }
-            } catch(e) {
-                document.getElementById('lastSavedTime').textContent = "無法連線至雲端資料庫";
+                var data = await TeaLove.request('getInventory');
+                renderInventory(data.items || []);
+                document.getElementById('lastSavedTime').textContent = data.lastSavedTime ? '最後同步：' + data.lastSavedTime.replace('T', ' ') : '尚無儲存紀錄';
+            } catch (error) {
+                if (error.code === 'UNAUTHORIZED') return window.location.replace('login.html?expired=1');
+                document.getElementById('inventoryContainer').innerHTML = '<div class="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-600">' + TeaLove.getErrorMessage(error) + '</div>';
+                document.getElementById('lastSavedTime').textContent = '讀取失敗';
             }
         }
 
         async function saveInventoryToCloud() {
             var saveBtn = document.getElementById('saveBtn');
             saveBtn.disabled = true;
-            saveBtn.textContent = "正在同步至雲端...";
-            
-            var invData = {};
-            inventoryItems.forEach(id => {
-                var el = document.getElementById(id);
-                invData[id] = el ? (parseFloat(el.value) || 0) : 0;
+            saveBtn.textContent = '正在同步至雲端…';
+            var inventory = {};
+            inventoryItems.forEach(function (item) {
+                var input = document.getElementById(item.id);
+                inventory[item.id] = input ? Number(input.value || 0) : 0;
             });
 
             try {
-                var response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'saveInventory', inventory: invData }),
-                    redirect: 'follow'
-                });
-                var result = await response.json();
-                if (result.success) {
-                    showToast("🎉 庫存數據已成功同步至雲端試算表！");
-                    loadInventoryFromCloud();
-                } else {
-                    showToast("❌ 儲存失敗: " + result.message, "error");
-                }
-            } catch(e) {
-                showToast("❌ 無法連線至伺服器", "error");
+                await TeaLove.request('saveInventory', { inventory: inventory });
+                showToast('庫存數據已同步至 Demo 資料庫');
+                await loadInventoryFromCloud();
+            } catch (error) {
+                showToast(TeaLove.getErrorMessage(error), 'error');
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 儲存雲端庫存';
             }
         }
 
-        function showToast(msg, type = "success") {
+        function showToast(message, type) {
             var toast = document.getElementById('toastMessage');
-            var toastText = document.getElementById('toastText');
-            var toastIcon = document.getElementById('toastIcon');
-            toastText.textContent = msg;
-            if (type === "success") toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
-            else toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400 text-lg";
-            
+            document.getElementById('toastText').textContent = message;
+            document.getElementById('toastIcon').className = type === 'error' ? 'fa-solid fa-circle-exclamation text-rose-400 text-lg' : 'fa-solid fa-circle-check text-emerald-400 text-lg';
             toast.classList.remove('opacity-0', 'translate-y-12');
             toast.classList.add('opacity-100', 'translate-y-0');
-            setTimeout(() => {
-                toast.classList.remove('opacity-100', 'translate-y-0');
-                toast.classList.add('opacity-0', 'translate-y-12');
-            }, 2500);
+            setTimeout(function () { toast.classList.remove('opacity-100', 'translate-y-0'); toast.classList.add('opacity-0', 'translate-y-12'); }, 2500);
         }
 
         function exportToCSV() {
-            var csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            csvContent += "原物料名稱,庫存數量\n";
-            var itemNames = {'qty-tea': '特級綠茶葉', 'qty-boba': '黑糖珍珠', 'qty-sugar': '蔗糖糖漿', 'qty-weed': '特調配方 (大麻)'};
-            inventoryItems.forEach(id => {
-                var el = document.getElementById(id);
-                var qty = el ? (el.value || 0) : 0;
-                csvContent += `${itemNames[id]},${qty}\n`;
+            var csvContent = 'data:text/csv;charset=utf-8,\uFEFF原物料名稱,庫存數量,單位,低量門檻,狀態\n';
+            inventoryItems.forEach(function (item) {
+                var input = document.getElementById(item.id);
+                csvContent += '"' + item.name + '",' + (input ? input.value || 0 : 0) + ',"' + item.unit + '",' + item.threshold + ',"' + (item.status === 'low' ? '低庫存' : '正常') + '"\n';
             });
-            var link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csvContent));
-            link.setAttribute("download", `鮮茶樂_雲端庫存盤點表.csv`);
+            var link = document.createElement('a');
+            link.href = encodeURI(csvContent);
+            link.download = '鮮茶樂_Demo庫存盤點表.csv';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

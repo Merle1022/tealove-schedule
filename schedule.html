@@ -255,16 +255,17 @@
         <img src="manager.png" alt="正妹店長" class="w-40 h-auto origin-bottom animate-float-glow" id="manager-img">
     </div>
 
+    <script src="app.js"></script>
     <script>
         // --- 核心系統狀態 ---
-        var API_URL = "https://script.google.com/macros/s/AKfycbzovVyQ9_OyWwZHrplF9TYWkuQf5KNdsFL6BwGpncJwqoIOQwYf1Y0Yb4FX_2wSkdg8/exec";
-        
-        var currentYear = 2026;
-        var currentWeek = 28;
+        var session = TeaLove.requireSession();
+        var isoWeek = TeaLove.getIsoWeek(new Date());
+        var currentYear = isoWeek.year;
+        var currentWeek = isoWeek.week;
 
         // 從登入狀態撈取對應權限與員工ID
-        var userRole = localStorage.getItem('tealove_role') || 'employee';
-        var currentEmpId = localStorage.getItem('tealove_empId') || '';
+        var userRole = session ? session.role : '';
+        var currentEmpId = session ? session.employeeId : '';
 
         // 同步試算表「帳號管理」中的架構員工
         var employees = [
@@ -286,11 +287,7 @@
         var confirmCallback = null;
 
         window.onload = function() {
-            var role = localStorage.getItem('tealove_role');
-            if (!role) {
-                window.location.href = 'login.html';
-                return;
-            }
+            if (!session) return;
             updateWeekDisplay();
             renderShiftTypes();
             renderEmployeeList();
@@ -306,24 +303,30 @@
         async function loadScheduleFromCloud() {
             showToast('⏳ 正在同步雲端班表...', 'info');
             try {
-                var response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'getSchedule' }),
-                    redirect: 'follow'
-                });
-                var result = await response.json();
-                if (result.success) {
-                    scheduleData = result.schedule || {};
-                    renderScheduleGrid();
-                    calculateSummary();
-                    showToast('✅ 雲端班表同步成功！');
-                } else {
-                    showToast('❌ 無法載入班表: ' + result.message, 'error');
+                var data = await TeaLove.request('getSchedule', { year: currentYear, week: currentWeek });
+                scheduleData = data.schedule || {};
+                employees = (data.employees || []).filter(function (employee) { return employee.active; });
+                if (data.shifts && data.shifts.length) {
+                    var colors = {
+                        morning: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                        middle: 'bg-amber-50 text-amber-800 border-amber-200',
+                        evening: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+                        custom: 'bg-sky-50 text-sky-800 border-sky-200'
+                    };
+                    shiftTypes = {};
+                    data.shifts.forEach(function (shift) {
+                        shiftTypes[shift.id] = { name: shift.name, hours: shift.hours, time: shift.start + '-' + shift.end, bg: colors[shift.id] || 'bg-slate-50 text-slate-800 border-slate-200' };
+                    });
                 }
+                renderShiftTypes();
+                renderEmployeeList();
+                renderScheduleGrid();
+                calculateSummary();
+                showToast('✅ 雲端班表同步成功！');
             } catch(e) {
                 console.error(e);
-                showToast('❌ 無法連線至雲端資料庫', 'error');
+                if (e.code === 'UNAUTHORIZED') return window.location.replace('login.html?expired=1');
+                showToast('❌ ' + TeaLove.getErrorMessage(e), 'error');
                 renderScheduleGrid();
             }
         }
@@ -352,10 +355,9 @@
         function changeWeek(direction) {
             currentWeek += direction;
             if (currentWeek < 1) { currentWeek = 52; currentYear--; }
-            else if (currentWeek > 52) { currentWeek = 1; currentYear++; }
+            else if (currentWeek > 53) { currentWeek = 1; currentYear++; }
             updateWeekDisplay();
-            renderScheduleGrid();
-            calculateSummary();
+            loadScheduleFromCloud();
         }
 
         function renderShiftTypes() {
@@ -490,38 +492,16 @@
             showToast('⏳ 正在儲存至雲端系統...', 'info');
 
             try {
-                var response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: 'saveShift',
-                        dataKey: dataKey,
-                        shiftKey: shiftKey,
-                        employeeId: currentEmpId,
-                        role: userRole
-                    }),
-                    redirect: 'follow'
-                });
-                
-                var textResult = await response.text();
-                var result;
-                try { result = JSON.parse(textResult); } catch(e) { throw new Error(textResult); }
-
-                if (result.success) {
-                    if (shiftKey === 'off') delete scheduleData[dataKey];
-                    else scheduleData[dataKey] = shiftKey;
-                    
-                    renderScheduleGrid();
-                    calculateSummary();
-                    showToast('✅ 排班更新成功！');
-                } else {
-                    showToast('❌ ' + result.message, 'error');
-                }
+                await TeaLove.request('saveShift', { dataKey: dataKey, shiftKey: shiftKey });
+                if (shiftKey === 'off') delete scheduleData[dataKey];
+                else scheduleData[dataKey] = shiftKey;
+                renderScheduleGrid();
+                calculateSummary();
+                showToast('✅ 排班更新成功！');
             } catch(error) {
                 console.error(error);
-                // 把後端傳過來的「已達 2 人上限」或其他具體錯誤文字吐在提示裡
-                var msg = error.message.includes("上限") ? error.message : "雲端存取失敗，請重新操作。";
-                showToast('❌ ' + msg, 'error');
+                if (error.code === 'UNAUTHORIZED') return window.location.replace('login.html?expired=1');
+                showToast('❌ ' + TeaLove.getErrorMessage(error), 'error');
             }
         }
 
@@ -584,12 +564,7 @@
                         for(var d=0; d<7; d++) {
                             var dataKey = `${currentYear}_${currentWeek}_${emp.id}_${d}`;
                             if(scheduleData[dataKey]) {
-                                await fetch(API_URL, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                                    body: JSON.stringify({ action: 'saveShift', dataKey: dataKey, shiftKey: 'off', employeeId: currentEmpId, role: userRole }),
-                                    redirect: 'follow'
-                                });
+                                await TeaLove.request('saveShift', { dataKey: dataKey, shiftKey: 'off' });
                                 delete scheduleData[dataKey];
                             }
                         }

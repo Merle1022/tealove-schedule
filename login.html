@@ -35,15 +35,12 @@
             <p class="text-xs text-slate-500 mt-2">請輸入您的帳號密碼以登入系統</p>
         </div>
 
-        <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
-            <div class="flex items-center justify-between gap-3">
-                <div>
-                    <p class="text-xs font-bold text-emerald-800"><i class="fa-solid fa-flask mr-1"></i>作品集 Demo 帳號</p>
-                    <p class="mt-1 text-[11px] leading-5 text-emerald-700">帳號：<code class="font-bold">demo_admin</code>・密碼：<code class="font-bold">TeaLove2026!</code></p>
-                </div>
-                <button type="button" onclick="fillDemoAccount()" class="shrink-0 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-800">一鍵帶入</button>
+        <div class="mb-6 rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
+            <div>
+                <p class="text-xs font-bold text-blue-800"><i class="fa-solid fa-clipboard-list mr-1"></i>想要試用？</p>
+                <p class="mt-1 text-[11px] leading-5 text-blue-700">這個系統是作品集展示版。若想試用，請到 Instagram <a href="https://www.instagram.com/merle__188/" target="_blank" class="font-bold text-blue-600 hover:text-blue-800 underline">@merle__188</a> 私訊申請帳號。</p>
             </div>
-            <p class="mt-2 text-[10px] leading-4 text-emerald-600">僅限匿名測試資料，可隨時重設；請勿輸入真實員工或門市資訊。</p>
+            <p class="mt-2 text-[10px] leading-4 text-blue-600">我會給你試用帳號，帶你體驗完整功能。</p>
         </div>
 
         <form id="loginForm" class="space-y-5" onsubmit="handleLogin(event)">
@@ -83,12 +80,6 @@
             var expiredMessage = document.getElementById('errorMsg');
             expiredMessage.textContent = '登入狀態已到期，請重新登入。';
             expiredMessage.classList.remove('hidden');
-        }
-
-        function fillDemoAccount() {
-            document.getElementById('username').value = 'demo_admin';
-            document.getElementById('password').value = 'TeaLove2026!';
-            document.getElementById('username').focus();
         }
 
         async function handleLogin(event) {

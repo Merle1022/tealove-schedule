@@ -2,7 +2,7 @@
 
 飲料店店務管理 Demo，整合員工登入、每週排班、營運儀表板、原物料庫存管理，以及 CSV 匯出。
 
-- 線上展示：https://merle1022.github.io/tealove-schedule/
+- 線上展示：https://tealove.merle188.com/
 - 專案代號：`tealove-schedule`
 - 常用別名：鮮茶樂、飲料店排班系統、Tealove、飲料店班表
 

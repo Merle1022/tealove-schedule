@@ -9,9 +9,9 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    if (location.hostname === 'merle1022.github.io') {
+    if (['merle1022.github.io', 'tealove.merle188.com'].includes(location.hostname)) {
       gtag('config', 'G-87WES9QGWZ', {
-        linker: { domains: ['merle188.com', 'ipas-ai-quiz.netlify.app', 'ielts.merle188.com', 'fanfan.merle188.com', 'merle1022.github.io', 'ai-team-quest.merle-lab.workers.dev'] }
+        linker: { domains: ['merle188.com', 'tealove.merle188.com', 'ipas-ai-quiz.netlify.app', 'ielts.merle188.com', 'fanfan.merle188.com', 'merle1022.github.io', 'ai-team-quest.merle-lab.workers.dev'] }
       });
     }
   </script>
@@ -173,7 +173,7 @@
   <script>
     document.addEventListener('click', event => {
       const element = event.target.closest('button,a,[role="button"]');
-      if (!element || typeof gtag !== 'function' || location.hostname !== 'merle1022.github.io') return;
+      if (!element || typeof gtag !== 'function' || !['merle1022.github.io', 'tealove.merle188.com'].includes(location.hostname)) return;
       gtag('event', 'ui_interaction', {
         element_type: element.tagName.toLowerCase(),
         element_id: element.dataset.analyticsId || element.id || 'no_id',

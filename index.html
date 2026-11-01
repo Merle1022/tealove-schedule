@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>鮮茶樂｜店務營運儀表板</title>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-87WES9QGWZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    if (location.hostname === 'merle1022.github.io') {
+      gtag('config', 'G-87WES9QGWZ', {
+        linker: { domains: ['merle188.com', 'ipas-ai-quiz.netlify.app', 'ielts.merle188.com', 'fanfan.merle188.com', 'merle1022.github.io', 'ai-team-quest.merle-lab.workers.dev'] }
+      });
+    }
+  </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -321,5 +332,16 @@
             setTimeout(function () { toast.classList.add('translate-y-10', 'opacity-0'); }, 2600);
         }
     </script>
+  <footer style="max-width:1100px;margin:24px auto;padding:12px 16px;border-top:1px solid #cbd5e1;color:#475569;font-size:12px;line-height:1.7">
+    <p>由 <a href="https://merle188.com/about/" rel="author">梅爾</a> 製作・<a href="https://merle188.com/works/">查看作品集</a></p>
+    <p>本網站使用 Google Analytics 4 分析頁面瀏覽與元件互動；不傳送表單內容、班表、薪資或登入資料。詳見 <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google 隱私權政策</a>。</p>
+  </footer>
+  <script>
+    document.addEventListener('click', event => {
+      const element = event.target.closest('button,a,[role="button"]');
+      if (!element || typeof gtag !== 'function' || location.hostname !== 'merle1022.github.io') return;
+      gtag('event', 'ui_interaction', { element_type: element.tagName.toLowerCase() });
+    });
+  </script>
 </body>
 </html>

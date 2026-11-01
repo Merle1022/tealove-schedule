@@ -126,7 +126,11 @@
     document.addEventListener('click', event => {
       const element = event.target.closest('button,a,[role="button"]');
       if (!element || typeof gtag !== 'function' || location.hostname !== 'merle1022.github.io') return;
-      gtag('event', 'ui_interaction', { element_type: element.tagName.toLowerCase() });
+      gtag('event', 'ui_interaction', {
+        element_type: element.tagName.toLowerCase(),
+        element_id: element.dataset.analyticsId || element.id || 'no_id',
+        element_class: typeof element.className === 'string' ? element.className.trim().split(/\s+/)[0] || 'no_class' : 'no_class'
+      });
     });
   </script>
 </body>
